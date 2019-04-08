@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="style.css" />
+        <meta charset="utf-8" />
+
+        <script
+            src="https://code.jquery.com/jquery-3.3.1.min.js"
+            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+            crossorigin="anonymous"
+        ></script>
+
+        <script>
+            function resizeIframe(obj) {
+                obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
+                obj.style.width = obj.contentWindow.document.body.scrollWidth + 'px';
+            }
+        </script>
+
+        <script>
+            let menuItems;
+            $(document).ready(function() {
+                console.log('document loaded');
+                // Cache selectors
+                let lastId;
+                let menu = $('#mySidenav');
+                // All list items
+                menuItems = menu.find('a');
+
+                // Anchors corresponding to menu items
+                let scrollItems = menuItems.map(function() {
+                    let item = $($(this).attr('href'));
+                    if (item.length) {
+                        return item;
+                    }
+                });
+
+                // Bind to scroll
+                $(window).scroll(function() {
+                    // Get container scroll position
+                    let fromTop = $(this).scrollTop();
+                    // Get id of current scroll item
+                    let cur = scrollItems.map(function() {
+                        if ($(this).offset().top < fromTop + 20) return this;
+                    });
+
+                    // Get the id of the current element
+                    cur = cur[cur.length - 1];
+                    let id = cur && cur.length ? cur[0].id : '';
+
+                    if (lastId !== id) {
+                        // Set/remove active class
+                        menuItems.filter('[href="#' + lastId + '"]').removeClass('active');
+                        menuItems.filter('[href="#' + id + '"]').addClass('active');
+                        lastId = id;
+                    }
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <div id="mySidenav" class="sidenav">
+            <a href="#migrants">Migrants</a>
+            <a href="#asylum">Asylum Seekers</a>
+        </div>
+        <div class="header" style="text-align:center">
+            <iframe
+                id="world"
+                class="track"
+                frameborder="0"
+                scrolling="no"
+                onload="resizeIframe(this)"
+                src="p5/header/index.html"
+            ></iframe>
+        </div>
+        <section class="section" id="migrants">
+            <h1>Migrants</h1>
+            <p>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum fermentum
+                suscipit leo, eget eleifend leo blandit sit amet. Vestibulum ante ipsum primis in
+                faucibus orci luctus et ultrices posuere cubilia Curae; Cras blandit nunc vel tortor
+                hendrerit consequat. Pellentesque ac neque velit. Praesent a sagittis lacus.
+                Maecenas et ipsum sodales, blandit tortor dapibus, lobortis nisi. Vivamus id viverra
+                sem, vel tincidunt eros. Mauris posuere ac elit sed pretium. Maecenas gravida
+                laoreet neque, nec volutpat libero venenatis ac. Nulla convallis mi non sem molestie
+                congue. Donec orci enim, consectetur nec diam quis, dapibus rutrum neque. Lorem
+                ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum fermentum suscipit
+                leo, eget eleifend leo blandit sit amet. Vestibulum ante ipsum primis in faucibus
+                orci luctus et ultrices posuere cubilia Curae; Cras blandit nunc vel tortor
+                hendrerit consequat. Pellentesque ac neque velit. Praesent a sagittis lacus.
+                Maecenas et ipsum sodales, blandit tortor dapibus, lobortis nisi. Vivamus id viverra
+                sem, vel tincidunt eros. Mauris posuere ac elit sed pretium. Maecenas gravida
+                laoreet neque, nec volutpat libero venenatis ac. Nulla convallis mi non sem molestie
+                congue. Donec orci enim, consectetur nec diam quis, dapibus rutrum neque. Lorem
+                ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum fermentum suscipit
+                leo, eget eleifend leo blandit sit amet. Vestibulum ante ipsum primis in faucibus
+                orci luctus et ultrices posuere cubilia Curae; Cras blandit nunc vel tortor
+                hendrerit consequat. Pellentesque ac neque velit. Praesent a sagittis lacus.
+                Maecenas et ipsum sodales, blandit tortor dapibus, lobortis nisi. Vivamus id viverra
+                sem, vel tincidunt eros. Mauris posuere ac elit sed pretium. Maecenas gravida
+                laoreet neque, nec volutpat libero venenatis ac. Nulla convallis mi non sem molestie
+                congue. Donec orci enim, consectetur nec diam quis, dapibus rutrum neque. Lorem
+                ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum fermentum suscipit
+                leo, eget eleifend leo blandit sit amet. Vestibulum ante ipsum primis in faucibus
+                orci luctus et ultrices posuere cubilia Curae; Cras blandit nunc vel tortor
+                hendrerit consequat. Pellentesque ac neque velit. Praesent a sagittis lacus.
+                Maecenas et ipsum sodales, blandit tortor dapibus, lobortis nisi. Vivamus id viverra
+                sem, vel tincidunt eros. Mauris posuere ac elit sed pretium. Maecenas gravida
+                laoreet neque, nec volutpat libero venenatis ac. Nulla convallis mi non sem molestie
+                congue. Donec orci enim, consectetur nec diam quis, dapibus rutrum neque.
+            </p>
+        </section>
+
+        <section id="asylum">
+            <h1>Asylum</h1>
+            <iframe
+                class="track"
+                frameborder="0"
+                marginheight="20"
+                marginwidth="35"
+                scrolling="no"
+                onload="resizeIframe(this)"
+                src="p5/mappa/index.html"
+            ></iframe>
+            <p>
+                Aliquam erat volutpat. Nunc tempor imperdiet sem, vitae sollicitudin massa hendrerit
+                et. Maecenas aliquet leo erat, ut placerat lacus pellentesque sed. Ut in purus nec
+                velit porta sollicitudin quis vel leo. Vivamus quam ipsum, placerat non accumsan ut,
+                bibendum a tellus. Donec odio lacus, laoreet non sem ut, sodales maximus enim. Cras
+                rhoncus facilisis urna ac luctus. Nulla eget eleifend elit. Morbi suscipit feugiat
+                cursus. Vivamus eget ultrices est, at ornare nulla. Pellentesque habitant morbi
+                tristique senectus et netus et malesuada fames ac turpis egestas. Proin ut felis eu
+                elit imperdiet vehicula id nec purus. Proin eget viverra nisl. Quisque eu massa eget
+                est aliquet volutpat. Etiam eu enim ligula. Aliquam sit amet neque et urna dignissim
+                elementum. Donec vehicula dictum nibh, at vestibulum erat scelerisque id. Donec
+                ultrices condimentum elit et dictum. In lobortis fermentum condimentum. Nullam
+                pellentesque, turpis nec pharetra semper, orci tellus consequat quam, nec facilisis
+                diam magna at mi.
+            </p>
+        </section>
+
+        <script src="appear.js"></script>
+        <script>
+            appear({
+                init: function init() {
+                    console.log('dom is ready');
+                },
+                elements: function elements() {
+                    // work with all elements with the class "track"
+                    let elts = document.getElementsByClassName('track');
+                    console.log('Tracking:', elts);
+                    return elts;
+                },
+                appear: function appear(el) {
+                    if (el.contentWindow.loop != undefined) {
+                        el.contentWindow.loop();
+                        console.log(el.src, 'playing');
+                    }
+                },
+                disappear: function disappear(el) {
+                    if (el.contentWindow.noLoop != undefined) {
+                        el.contentWindow.noLoop();
+                        console.log(el.src, 'stopped');
+                    }
+                },
+                bounds: 50,
+                reappear: true
+            });
+        </script>
+    </body>
+</html>

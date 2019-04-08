@@ -1,0 +1,95 @@
+html {
+    scroll-behavior: smooth;
+}
+
+html,
+body,
+section {
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    color: #444444;
+    font-size: 9pt;
+    /* background-color: #fafafa; */
+
+    margin: 0;
+    padding: 0;
+    /* background: rgb(50, 50, 50); */
+
+    /* set position to relative to make slider placement relative to canavs */
+    position: relative;
+    /*display: flex; /* This fucker makes everything side by side */
+    /*flex-wrap: wrap;*/
+
+    /* This centers our sketch horizontally. */
+    justify-content: center;
+
+    /* This centers our sketch vertically. */
+    align-items: center;
+
+    align-content: center;
+    max-width: 800px;
+
+    margin-left: auto;
+    margin-right: auto;
+}
+
+p {
+    font-size: 18px;
+    text-align: justify;
+}
+
+h1 {
+    font-size: 30px;
+}
+
+/* The side navigation menu */
+.sidenav {
+    height: 100%; /* 100% Full-height */
+    width: 200px; /* 0 width - change this with JavaScript */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Stay on top */
+    top: 0; /* Stay at the top */
+    left: 0;
+    background-color: #111; /* Black*/
+    overflow-x: hidden; /* Disable horizontal scroll */
+    padding-top: 60px; /* Place content 60px from the top */
+    display: block;
+}
+
+/* The navigation menu links */
+.sidenav a {
+    padding: 8px 8px 8px 32px;
+    text-decoration: none;
+    font-size: 25px;
+    color: #818181;
+    display: block;
+    transition: 0.3s;
+}
+
+/* When you mouse over the navigation links, change their color */
+.sidenav a:hover {
+    color: #f1f1f1;
+}
+
+/* On smaller screens, where height is less than 450px, change the style of the sidenav (less padding and a smaller font size) */
+@media screen and (max-height: 450px) {
+    .sidenav {
+        padding-top: 15px;
+    }
+    .sidenav a {
+        font-size: 18px;
+    }
+}
+
+.active {
+    color: #f38a8a !important;
+    border-left: 5px solid #f38a8a;
+}
+
+section {
+    height: 100vh;
+    position: relative;
+    margin: 0;
+    padding: 0;
+    display: block;
+    z-index: 0;
+}
