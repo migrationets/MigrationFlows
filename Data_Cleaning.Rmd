@@ -267,7 +267,7 @@ with open('data/clean/country2ISO.json','r') as f:
 
 ## Asylum seekers
 
-```{python hidden=TRUE}
+```{python}
 # load
 monthly_asylum_seekers = pd.read_csv('data/raw/unhcr/delim_asylum_seekers_monthly.csv', delimiter='|')
 
@@ -281,26 +281,26 @@ monthly_asylum_seekers = monthly_asylum_seekers[monthly_asylum_seekers.value != 
 monthly_asylum_seekers.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 monthly_asylum_seekers.country = monthly_asylum_seekers.country.apply(lambda x: country2ID[x])
 monthly_asylum_seekers.origin = monthly_asylum_seekers.origin.apply(lambda x: country2ID[x])
 monthly_asylum_seekers.month = monthly_asylum_seekers.month.apply(lambda x: month2idx[x])
 ```
 
-```{python hidden=TRUE}
+```{python}
 monthly_asylum_seekers.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 monthly_asylum_seekers.to_csv('data/clean/asylum_seekers_monthly.csv',index=False)
 ```
 
-```{python hidden=TRUE}
+```{python}
 # use keep_default_na to prevent converting 'NA' to NaN
 tmp = pd.read_csv('data/clean/asylum_seekers_monthly.csv',keep_default_na=False)
 ```
 
-```{python hidden=TRUE}
+```{python}
 tot = len(monthly_asylum_seekers)
 for (idxa, a),(idxb,b) in zip(tmp.iterrows(), monthly_asylum_seekers.iterrows()):
     print('\r{}/{}'.format(idxa,tot),end='')
@@ -309,7 +309,7 @@ for (idxa, a),(idxb,b) in zip(tmp.iterrows(), monthly_asylum_seekers.iterrows())
 
 ## Refugees
 
-```{python hidden=TRUE}
+```{python}
 # load
 refugees = pd.read_csv('data/raw/unhcr_time_series_refugees.csv', skiprows=3,encoding = "ISO-8859-1")
 
@@ -323,28 +323,28 @@ refugees = refugees[refugees.value != 0]
 refugees.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 refugees.country = refugees.country.apply(lambda x: country2ID[x])
 refugees.origin = refugees.origin.apply(lambda x: country2ID[x])
 ```
 
-```{python hidden=TRUE}
+```{python}
 refugees.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 
 ```
 
-```{python hidden=TRUE}
+```{python}
 refugees.to_csv('data/clean/unhcr_timeseries.csv',index=False)
 ```
 
-```{python hidden=TRUE}
+```{python}
 tmp = pd.read_csv('data/clean/unhcr_timeseries.csv',keep_default_na=False)
 ```
 
-```{python hidden=TRUE}
+```{python}
 for (idxa, a),(idxb,b) in zip(tmp.iterrows(), refugees.iterrows()):
     print('\r{}'.format(idxa),end='')
     assert all(a == b), idxa
@@ -355,35 +355,35 @@ for (idxa, a),(idxb,b) in zip(tmp.iterrows(), refugees.iterrows()):
 
 ## conflicts
 
-```{python hidden=TRUE}
+```{python}
 conflicts = pd.read_csv('data/raw/ucdp-prio-acd-181.csv')
 ```
 
-```{python hidden=TRUE}
+```{python}
 conflicts.head()
 ```
 
 Let's extract the major conflicts (intensity = 1)
 
-```{python hidden=TRUE}
+```{python}
 big_conflicts = conflicts[(conflicts.year > 1951) & (conflicts.intensity_level > 1)][['location','year']]
 ```
 
-```{python hidden=TRUE}
+```{python}
 # check that all locations are in our index
 assert all([el.strip() in country2ID for loc_list in big_conflicts.location.str.replace(r"\(.*\)","").unique() for el in loc_list.split(',')])
 
 ```
 
-```{python hidden=TRUE}
+```{python}
 big_conflicts.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 
 ```
 
-```{python hidden=TRUE}
+```{python}
 major_conflicts = []
 for idx,data in big_conflicts.iterrows():
     actors = data.location.split(',')
@@ -393,81 +393,81 @@ for idx,data in big_conflicts.iterrows():
         major_conflicts.append({'actor':actor,'year':data.year})
 ```
 
-```{python hidden=TRUE}
+```{python}
 major_conflicts = pd.DataFrame(major_conflicts)#.groupby(["year", "actor"]).count()
 ```
 
-```{python hidden=TRUE}
+```{python}
 major_conflicts = major_conflicts.groupby(major_conflicts.columns.tolist(),as_index=False).size().reset_index(name='intensity')
 major_conflicts.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 Counter(major_conflicts.intensity.to_list())
 ```
 
-```{python hidden=TRUE}
+```{python}
 major_conflicts[major_conflicts.actor == 'US']
 ```
 
-```{python hidden=TRUE}
+```{python}
 major_conflicts.to_csv('data/clean/major_conflicts.csv')
 ```
 
 ## Georeferenced deaths
 
-```{python hidden=TRUE}
+```{python}
 ged_ucdp = pd.read_csv('data/raw/ged181.csv')
 ```
 
-```{python hidden=TRUE}
+```{python}
 #ged_ucdp.columns
 ```
 
-```{python hidden=TRUE}
+```{python}
 geo_deaths = ged_ucdp[(ged_ucdp.best > 0) & (ged_ucdp.best < 20000)][['year','date_start','country','best']].groupby(['year','date_start','country']).sum().reset_index()
 
 ```
 
-```{python hidden=TRUE}
+```{python}
 geo_deaths.date_start = pd.to_datetime(geo_deaths.date_start)
 geo_deaths['month'] = geo_deaths.date_start.apply(lambda x: x.month)
 geo_deaths.country = geo_deaths.country.str.replace(r"\(.*\)","").str.strip().apply(lambda x: country2ID[x])
 ```
 
-```{python hidden=TRUE}
+```{python}
 geo_deaths = geo_deaths.rename(index=str, columns={"date_start": "date", "country": "location",'best':'deaths'})
 geo_deaths.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 tot_per_year = geo_deaths.groupby('date').deaths.sum().reset_index()#.sort_values(by='date', axis=1, ascending=False)
 
 tot_per_year.sort_values('date',inplace=True)
 
 ```
 
-```{python hidden=TRUE}
+```{python}
 xs = tot_per_year.date.to_list()
 ys = tot_per_year.deaths.to_list()
 plt.plot(xs,ys)
 ```
 
-```{python hidden=TRUE}
+```{python}
 geo_deaths.to_csv('data/clean/georeferenced_deaths.csv', index=False)
 ```
 
 # UN migration stocks
 
-```{python hidden=TRUE}
+```{python}
 un = pd.read_csv('data/raw/UN_MigrantStockByOriginAndDestination_2017/UN.csv', delimiter=';')#, skiprows=15)
 ```
 
-```{python hidden=TRUE}
+```{python}
 un.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 to_drop = ["WORLD",
 "More developed regions",
 "Less developed regions",
@@ -508,34 +508,34 @@ to_drop = ["WORLD",
 "Polynesia"]
 ```
 
-```{python hidden=TRUE}
+```{python}
 un = un[~un['Major area, region, country or area of destination'].isin(to_drop)]
 un = un.reset_index().drop(['index','Notes','Sort_order','Code','Type of data (a)','Other North','Other South','Channel Islands'],axis=1)
 un.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 un = un.replace('..',0)
 ```
 
-```{python hidden=TRUE}
+```{python}
 # remove fucking dots from numbers
 un = un.applymap(lambda x : x.replace('.','') if type(x) is str else x)
 ```
 
-```{python hidden=TRUE}
+```{python}
 # rename Major area, region, country or area of destination -> 
 cols = un.columns.to_list()
 cols[1] = "Destination"
 un.columns = cols
 ```
 
-```{python hidden=TRUE}
+```{python}
 # drop the Fokin' Channel Islands
 un = un[un.Destination != 'Channel Islands']
 ```
 
-```{python hidden=TRUE}
+```{python}
 # replace country names with alpha-2 iso codes
 header = un.columns.to_list()[:3] # separate Year,Destination,Total
 un_countries = un.columns.to_list()[3:] # get country names
@@ -543,19 +543,19 @@ cols = header + [country2ID[country] for country in un_countries] # name->code
 un.columns = cols
 ```
 
-```{python hidden=TRUE}
+```{python}
 un.Destination = un.Destination.apply(lambda x: country2ID[x])
 ```
 
-```{python hidden=TRUE}
+```{python}
 un.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 un.to_csv('data/clean/un_migration_stocks.csv', index=False)
 ```
 
-```{python hidden=TRUE}
+```{python}
 world={'AFRICA':
        {"Eastern Africa":[
         "Burundi",
@@ -821,7 +821,7 @@ world={'AFRICA':
     }
 ```
 
-```{python hidden=TRUE}
+```{python}
 list(world.keys())
 ```
 
@@ -830,15 +830,15 @@ list(world.keys())
 
 ## ACLED fatalities
 
-```{python hidden=TRUE}
+```{python}
 fatalities = pd.read_csv('data/ACLED_1997-2015_csv_dyadic.csv',encoding="ISO-8859-1")
 ```
 
-```{python hidden=TRUE}
+```{python}
 fatalities.columns = [col.lower() for col in fatalities.columns]
 ```
 
-```{python hidden=TRUE}
+```{python}
 fatalities = fatalities.drop(['gwno',
                              'event_id_cnty',
                              'event_id_no_cnty',
@@ -861,11 +861,11 @@ fatalities = fatalities.drop(['gwno',
                              'notes'],axis=1)
 ```
 
-```{python hidden=TRUE}
+```{python}
 fatalities.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 #[loc in country2ID for loc in fatalities.location.unique()]
 fatalities.fatalities.describe()
 ```
@@ -881,7 +881,7 @@ In contrast, WID.world develops a methodology based upon the notion of Distribut
 
 [WID](https://wid.world/methodology/)
 
-```{python hidden=TRUE}
+```{python}
 wid = pd.read_csv('/Users/lapofrati/git/MigrationFlows/data/raw/WID_Data_26042019-020609.csv',
                   skiprows=1,
                   delimiter=';'
@@ -891,20 +891,20 @@ wid = pd.read_csv('/Users/lapofrati/git/MigrationFlows/data/raw/WID_Data_2604201
                  )
 ```
 
-```{python hidden=TRUE}
+```{python}
 wid.columns = ['Year']+[nonsense.split('\n')[1].strip() for nonsense in wid.columns[1:]]
 wid = wid[[country for country in wid.columns if country != 'null']] # drop fucking nulls
 ```
 
-```{python hidden=TRUE}
+```{python}
 wid.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 set([country for country in wid.columns[1:] if country not in country2ID])
 ```
 
-```{python hidden=TRUE}
+```{python}
 #['Year']+[country in country2ID for country in wid.columns]
 
 #'Cote d’Ivoire',
@@ -912,7 +912,7 @@ set([country for country in wid.columns[1:] if country not in country2ID])
 #'Korea'
 ```
 
-```{python hidden=TRUE}
+```{python}
 wid_meta = pd.read_csv('/Users/lapofrati/git/MigrationFlows/data/raw/WID_Metadata_26042019-020609.csv',
                   skiprows=1,
                   delimiter=';'
@@ -922,60 +922,60 @@ wid_meta = pd.read_csv('/Users/lapofrati/git/MigrationFlows/data/raw/WID_Metadat
                  )
 ```
 
-```{python hidden=TRUE}
+```{python}
 countries = [country for country in wid_meta[wid_meta['Country Code'].str.len() <= 2]['Country Name'].to_list()]
 codes = [country for country in wid_meta[wid_meta['Country Code'].str.len() <= 2]['Country Code'].to_list()]
 
 ```
 
-```{python hidden=TRUE}
+```{python}
 wid_meta.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 wid = wid[['Year']+[country for country in countries if country in wid.columns]]
 ```
 
-```{python hidden=TRUE}
+```{python}
 wid.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 tmp = {country : code for country,code in zip(wid_meta['Country Name'].to_list(),wid_meta['Country Code'].to_list())}
 
 
 ```
 
-```{python hidden=TRUE}
+```{python}
 matching_countries = []
 wid[[]]
 wid.columns = ['Year']+[tmp[country] for country in wid.columns[1:]]
 ```
 
-```{python hidden=TRUE}
+```{python}
 wid = wid.replace(np.nan,0)
 wid.head()
 ```
 
-```{python hidden=TRUE}
+```{python}
 #wid.to_csv('/Users/lapofrati/git/MigrationFlows/data/clean/money.csv', index=False)
 #4217.6288/3161319.5829999996
 5484.3013/3.199451e+06
 ```
 
-```{python hidden=TRUE}
+```{python}
 wid[wid.Year == 1990][wid_countries].sum(axis=1)
 ```
 
-```{python hidden=TRUE}
+```{python}
 len([code for code in list(tmp.values()) if code in list(country2ID.values())])
 ```
 
-```{python hidden=TRUE}
+```{python}
 wid_countries = wid.columns[1:]
 wid[wid_countries].div(wid[wid_countries].sum(axis=1),axis=0)
 ```
 
-```{python hidden=TRUE}
+```{python}
 
 ```
