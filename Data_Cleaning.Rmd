@@ -1,0 +1,981 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.0'
+      jupytext_version: 0.8.6
+  kernelspec:
+    display_name: Python [conda env:meta]
+    language: python
+    name: conda-env-meta-py
+---
+
+```{python}
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from collections import Counter, defaultdict
+import re
+import calendar
+import json
+import datetime
+```
+
+# Populations
+
+```{python}
+names = ["country",
+"code",
+"lat",
+"long",
+"1960",
+"1961",
+"1962",
+"1963",
+"1964",
+"1965",
+"1966",
+"1967",
+"1968",
+"1969",
+"1970",
+"1971",
+"1972",
+"1973",
+"1974",
+"1975",
+"1976",
+"1977",
+"1978",
+"1979",
+"1980",
+"1981",
+"1982",
+"1983",
+"1984",
+"1985",
+"1986",
+"1987",
+"1988",
+"1989",
+"1990",
+"1991",
+"1992",
+"1993",
+"1994",
+"1995",
+"1996",
+"1997",
+"1998",
+"1999",
+"2000",
+"2001",
+"2002",
+"2003",
+"2004",
+"2005",
+"2006",
+"2007",
+"2008",
+"2009",
+"2010",
+"2011",
+"2012",
+"2013",
+"2014",
+"2015",
+"2016"]
+```
+
+```{python}
+pop = pd.read_csv('data/raw/unhcr/countries.csv', delimiter='|', names=names)
+```
+
+```{python}
+# save mapping between ISO codes and coordinates
+iso2coords = {}
+for idx, (code,lat,long) in pop[['code','lat','long']].iterrows():
+    iso2coords[code] = (lat,long)
+with open('data/clean/ISO2coords.json','w') as f:
+    f.write(json.dumps(iso2coords))
+```
+
+```{python}
+locs = pop[['country','code']] # used later on
+pop = pop[['country','code']+list(pop.columns)[4:]]
+```
+
+```{python}
+pop.head()
+```
+
+```{python}
+
+```
+
+```{python}
+pop.to_csv('data/clean/pop_data.csv',index=False)
+```
+
+```{python}
+pd.read_csv('data/clean/pop_data.csv').head()
+```
+
+# Countries
+
+```{python}
+countries = pd.read_csv('data/raw/countries_codes_coords.csv')
+```
+
+```{python}
+countries.columns = countries.columns.str.replace(r"\(.*\)","").str.strip()
+countries.columns = countries.columns.str.replace(r"-","_")
+countries.columns = countries.columns.str.replace(r" ","_")
+countries.columns = countries.columns.str.lower()
+
+countries = countries.applymap(lambda x: x.replace('"',''))
+countries.alpha_2_code = countries.alpha_2_code.apply(lambda x: x.replace(' ',''))
+countries.alpha_3_code = countries.alpha_3_code.apply(lambda x: x.replace(' ',''))
+```
+
+```{python}
+countries.head()
+```
+
+```{python}
+countries.numeric_code = countries.numeric_code.astype(np.int32)
+countries.latitude = countries.latitude.astype(np.float32)
+countries.longitude = countries.longitude.astype(np.float32)
+```
+
+```{python}
+#countries.alpha_2_code.unique()
+```
+
+```{python}
+country2ID = {}
+for idx,(country,code) in locs.iterrows():
+    country2ID[country] = code
+    
+for idx,(country,code) in countries[['country','alpha_2_code']].iterrows():
+    country2ID[country] = code
+    
+country2ID['Caribbean Netherlands'] = 'AN'
+country2ID['Tibet'] = 'TB'
+country2ID['Micronesia (Fed. States of)'] = 'FM'
+country2ID['Micronesia (Fed States of)'] = 'FM'
+country2ID['Republic of Korea'] = 'KR'
+country2ID['Saint Helena'] = 'SH'
+country2ID['State of Palestine'] = 'PS'
+country2ID['United Republic of Tanzania'] = 'TZ'
+country2ID['Wallis and Futuna Islands'] = 'WF'
+country2ID['Wallis and Futuna Islands '] = 'WF'
+country2ID['Congo'] = 'CD'
+country2ID["Bonaire"] = "BQ"
+country2ID['Saint-Pierre-et-Miquelon'] = 'PM'
+country2ID['Bosnia-Herzegovina'] = 'BA'
+country2ID['South Yemen'] = 'YD'
+country2ID['Rumania'] = 'RO'
+country2ID['Macedonia, FYR'] = 'MK'
+
+country2ID["Various/Unknown"] = "??"
+country2ID["Various/unknown"] = "??"
+country2ID["Stateless"] = "??"
+
+fix = {"Dem. Rep. of the Congo": "DR Congo",
+        "Russian Federation": "Russia",
+        "Serbia and Kosovo (S/RES/1244 (1999))": "Kosovo",
+        "Serbia and Kosovo: S/RES/1244 (1999)": "Kosovo",
+        "Rep. of Moldova": "Moldova",
+        "Czech Rep.": "Czech Republic",
+        "Micronesia (Federated States of)": "Micronesia",
+        "Rep. of Korea": "South Korea",
+        "Dem. People's Rep. of Korea": "North Korea",
+        "Dem People's Republic of Korea": "North Korea",
+        "United States of America": "United States",
+        "USA (INS/DHS)": "United States",
+        "USA (EOIR)": "United States",
+        "China, Macao SAR": "Macau",
+        "Central African Rep.": "Central African Republic",
+        "Lao People's Dem. Rep.": "Laos",
+        "Sint Maarten (Dutch part)": "Sint Maarten",
+        "The former Yugoslav Republic of Macedonia": "Macedonia",
+        "The former Yugoslav Rep. of Macedonia": "Macedonia",
+        "China, Hong Kong SAR": "Hong Kong",
+        "United Rep. of Tanzania": "Tanzania",
+        "Dominican Rep.": "Dominica",
+        "Iran (Islamic Rep. of)": "Iran",
+        "Venezuela (Bolivarian Republic of)": "Venezuela",
+        "CuraÃ§ao": "Curaçao",
+        "Bolivia (Plurinational State of)": "Bolivia",
+        "Syrian Arab Rep.": "Syria",
+        "CÃ´te d'Ivoire": "Ivory Coast",
+        "United Kingdom of Great Britain and Northern Ireland": "United Kingdom",
+        "Palestinian": "Palestine",
+        "Brunei Darussalam": "Brunei",
+        "Cabo Verde": "Cape Verde",
+        "Viet Nam": "Vietnam",
+        'South Vietnam':'Vietnam',
+        "Côte d'Ivoire": "CÃ´te d'Ivoire",
+        "Sao Tome and Principe": "São Tomé and Príncipe",
+        "Tibetan": "Tibet",
+        'Bolivia (Plurinational State of)':'Bolivia',
+        'Brunei Darussalam':'Brunei',
+        'Cabo Verde':'Cape Verde',
+        'China, Hong Kong SAR':'Hong Kong',
+        'China, Macao SAR':'Macau',
+        "Côte d'Ivoire":'Ivory Coast',
+        'Czechia':'Czech Republic',
+        "Dem. People's Republic of Korea":'North Korea',
+        'Democratic Republic of the Congo':'Republic of the Congo',
+        'Faeroe Islands':'Faroe Islands',
+        'Falkland Islands (Malvinas)':'Falkland Islands',
+        'Holy See':'Vatican City',
+        'Holy See (the)':'Vatican City',
+        'Iran (Islamic Republic of)':'Iran',
+        "Lao People's Democratic Republic":'Laos',
+        'Republic of Moldova':'Moldova',
+        'Syrian Arab Republic':'Syria',
+        'TFYR Macedonia':'Macedonia'
+       }
+
+for dirty_country, clean_country in fix.items():
+    country2ID[dirty_country] = country2ID[clean_country]
+
+ID2country = defaultdict(list)
+for key,val in country2ID.items():
+    ID2country[val].append(key)
+ID2country = dict(ID2country)
+
+month2idx = {calendar.month_name[i]:i for i in range(1,13)}
+```
+
+```{python}
+with open('data/clean/country2ISO.json','w') as f:
+    f.write(json.dumps(country2ID))
+```
+
+```{python}
+with open('data/clean/country2ISO.json','r') as f:
+    assert json.loads(f.read()) == country2ID
+```
+
+# UNHCR
+
+
+## Asylum seekers
+
+```{python hidden=TRUE}
+# load
+monthly_asylum_seekers = pd.read_csv('data/raw/unhcr/delim_asylum_seekers_monthly.csv', delimiter='|')
+
+# clean
+monthly_asylum_seekers.columns = [name.split()[0].lower() for name in monthly_asylum_seekers.columns.tolist()]
+# * : These represent situations where the figures are being kept confidential to protect the anonymity of individuals
+monthly_asylum_seekers.value = monthly_asylum_seekers.value.apply(lambda x: int(x) if x!='*' else 0)
+monthly_asylum_seekers = monthly_asylum_seekers[monthly_asylum_seekers.value != 0]
+
+# show
+monthly_asylum_seekers.head()
+```
+
+```{python hidden=TRUE}
+monthly_asylum_seekers.country = monthly_asylum_seekers.country.apply(lambda x: country2ID[x])
+monthly_asylum_seekers.origin = monthly_asylum_seekers.origin.apply(lambda x: country2ID[x])
+monthly_asylum_seekers.month = monthly_asylum_seekers.month.apply(lambda x: month2idx[x])
+```
+
+```{python hidden=TRUE}
+monthly_asylum_seekers.head()
+```
+
+```{python hidden=TRUE}
+monthly_asylum_seekers.to_csv('data/clean/asylum_seekers_monthly.csv',index=False)
+```
+
+```{python hidden=TRUE}
+# use keep_default_na to prevent converting 'NA' to NaN
+tmp = pd.read_csv('data/clean/asylum_seekers_monthly.csv',keep_default_na=False)
+```
+
+```{python hidden=TRUE}
+tot = len(monthly_asylum_seekers)
+for (idxa, a),(idxb,b) in zip(tmp.iterrows(), monthly_asylum_seekers.iterrows()):
+    print('\r{}/{}'.format(idxa,tot),end='')
+    assert all(a == b), idxa
+```
+
+## Refugees
+
+```{python hidden=TRUE}
+# load
+refugees = pd.read_csv('data/raw/unhcr_time_series_refugees.csv', skiprows=3,encoding = "ISO-8859-1")
+
+# clean
+refugees.columns = [name.split()[0].lower() for name in refugees.columns.tolist()]
+# * : These represent situations where the figures are being kept confidential to protect the anonymity of individuals
+refugees.value = refugees.value.apply(lambda x: int(x) if x!='*' else 0)
+refugees = refugees[refugees.value != 0]
+
+# show
+refugees.head()
+```
+
+```{python hidden=TRUE}
+refugees.country = refugees.country.apply(lambda x: country2ID[x])
+refugees.origin = refugees.origin.apply(lambda x: country2ID[x])
+```
+
+```{python hidden=TRUE}
+refugees.head()
+```
+
+```{python hidden=TRUE}
+
+```
+
+```{python hidden=TRUE}
+refugees.to_csv('data/clean/unhcr_timeseries.csv',index=False)
+```
+
+```{python hidden=TRUE}
+tmp = pd.read_csv('data/clean/unhcr_timeseries.csv',keep_default_na=False)
+```
+
+```{python hidden=TRUE}
+for (idxa, a),(idxb,b) in zip(tmp.iterrows(), refugees.iterrows()):
+    print('\r{}'.format(idxa),end='')
+    assert all(a == b), idxa
+```
+
+# UCDP conflicts
+
+
+## conflicts
+
+```{python hidden=TRUE}
+conflicts = pd.read_csv('data/raw/ucdp-prio-acd-181.csv')
+```
+
+```{python hidden=TRUE}
+conflicts.head()
+```
+
+Let's extract the major conflicts (intensity = 1)
+
+```{python hidden=TRUE}
+big_conflicts = conflicts[(conflicts.year > 1951) & (conflicts.intensity_level > 1)][['location','year']]
+```
+
+```{python hidden=TRUE}
+# check that all locations are in our index
+assert all([el.strip() in country2ID for loc_list in big_conflicts.location.str.replace(r"\(.*\)","").unique() for el in loc_list.split(',')])
+
+```
+
+```{python hidden=TRUE}
+big_conflicts.head()
+```
+
+```{python hidden=TRUE}
+
+```
+
+```{python hidden=TRUE}
+major_conflicts = []
+for idx,data in big_conflicts.iterrows():
+    actors = data.location.split(',')
+    for actor in actors:
+        actor = re.sub(r"\(.*\)","", actor).strip()
+        actor = country2ID[actor]
+        major_conflicts.append({'actor':actor,'year':data.year})
+```
+
+```{python hidden=TRUE}
+major_conflicts = pd.DataFrame(major_conflicts)#.groupby(["year", "actor"]).count()
+```
+
+```{python hidden=TRUE}
+major_conflicts = major_conflicts.groupby(major_conflicts.columns.tolist(),as_index=False).size().reset_index(name='intensity')
+major_conflicts.head()
+```
+
+```{python hidden=TRUE}
+Counter(major_conflicts.intensity.to_list())
+```
+
+```{python hidden=TRUE}
+major_conflicts[major_conflicts.actor == 'US']
+```
+
+```{python hidden=TRUE}
+major_conflicts.to_csv('data/clean/major_conflicts.csv')
+```
+
+## Georeferenced deaths
+
+```{python hidden=TRUE}
+ged_ucdp = pd.read_csv('data/raw/ged181.csv')
+```
+
+```{python hidden=TRUE}
+#ged_ucdp.columns
+```
+
+```{python hidden=TRUE}
+geo_deaths = ged_ucdp[(ged_ucdp.best > 0) & (ged_ucdp.best < 20000)][['year','date_start','country','best']].groupby(['year','date_start','country']).sum().reset_index()
+
+```
+
+```{python hidden=TRUE}
+geo_deaths.date_start = pd.to_datetime(geo_deaths.date_start)
+geo_deaths['month'] = geo_deaths.date_start.apply(lambda x: x.month)
+geo_deaths.country = geo_deaths.country.str.replace(r"\(.*\)","").str.strip().apply(lambda x: country2ID[x])
+```
+
+```{python hidden=TRUE}
+geo_deaths = geo_deaths.rename(index=str, columns={"date_start": "date", "country": "location",'best':'deaths'})
+geo_deaths.head()
+```
+
+```{python hidden=TRUE}
+tot_per_year = geo_deaths.groupby('date').deaths.sum().reset_index()#.sort_values(by='date', axis=1, ascending=False)
+
+tot_per_year.sort_values('date',inplace=True)
+
+```
+
+```{python hidden=TRUE}
+xs = tot_per_year.date.to_list()
+ys = tot_per_year.deaths.to_list()
+plt.plot(xs,ys)
+```
+
+```{python hidden=TRUE}
+geo_deaths.to_csv('data/clean/georeferenced_deaths.csv', index=False)
+```
+
+# UN migration stocks
+
+```{python hidden=TRUE}
+un = pd.read_csv('data/raw/UN_MigrantStockByOriginAndDestination_2017/UN.csv', delimiter=';')#, skiprows=15)
+```
+
+```{python hidden=TRUE}
+un.head()
+```
+
+```{python hidden=TRUE}
+to_drop = ["WORLD",
+"More developed regions",
+"Less developed regions",
+"Least developed countries",
+"Less developed regions, excluding least developed countries",
+"High-income countries",
+"Middle-income countries",
+"Upper-middle-income countries",
+"Lower-middle-income countries",
+"Low-income countries",
+"Sub-Saharan Africa",
+"AFRICA",
+"Eastern Africa",
+"Middle Africa",
+"Northern Africa",
+"Southern Africa",
+"Western Africa",
+"ASIA",
+"Central Asia",
+"Eastern Asia",
+"Southern Asia",
+"South-Eastern Asia",
+"Western Asia",
+"EUROPE",
+"Eastern Europe",
+"Northern Europe",
+"Southern Europe",
+"Western Europe",
+"LATIN AMERICA AND THE CARIBBEAN",
+"Caribbean",
+"Central America",
+"South America",
+"NORTHERN AMERICA",
+"OCEANIA",
+"Australia/New Zealand",
+"Melanesia",
+"Micronesia",
+"Polynesia"]
+```
+
+```{python hidden=TRUE}
+un = un[~un['Major area, region, country or area of destination'].isin(to_drop)]
+un = un.reset_index().drop(['index','Notes','Sort_order','Code','Type of data (a)','Other North','Other South','Channel Islands'],axis=1)
+un.head()
+```
+
+```{python hidden=TRUE}
+un = un.replace('..',0)
+```
+
+```{python hidden=TRUE}
+# remove fucking dots from numbers
+un = un.applymap(lambda x : x.replace('.','') if type(x) is str else x)
+```
+
+```{python hidden=TRUE}
+# rename Major area, region, country or area of destination -> 
+cols = un.columns.to_list()
+cols[1] = "Destination"
+un.columns = cols
+```
+
+```{python hidden=TRUE}
+# drop the Fokin' Channel Islands
+un = un[un.Destination != 'Channel Islands']
+```
+
+```{python hidden=TRUE}
+# replace country names with alpha-2 iso codes
+header = un.columns.to_list()[:3] # separate Year,Destination,Total
+un_countries = un.columns.to_list()[3:] # get country names
+cols = header + [country2ID[country] for country in un_countries] # name->code
+un.columns = cols
+```
+
+```{python hidden=TRUE}
+un.Destination = un.Destination.apply(lambda x: country2ID[x])
+```
+
+```{python hidden=TRUE}
+un.head()
+```
+
+```{python hidden=TRUE}
+un.to_csv('data/clean/un_migration_stocks.csv', index=False)
+```
+
+```{python hidden=TRUE}
+world={'AFRICA':
+       {"Eastern Africa":[
+        "Burundi",
+        "Comoros",
+        "Djibouti",
+        "Eritrea",
+        "Ethiopia",
+        "Kenya",
+        "Madagascar",
+        "Malawi",
+        "Mauritius",
+        "Mayotte",
+        "Mozambique",
+        "Réunion",
+        "Rwanda",
+        "Seychelles",
+        "Somalia",
+        "South Sudan",
+        "Uganda",
+        "United Republic of Tanzania",
+        "Zambia",
+        "Zimbabwe"],
+        "Middle Africa":[
+        "Angola",
+        "Cameroon",
+        "Central African Republic",
+        "Chad",
+        "Congo",
+        "Democratic Republic of the Congo",
+        "Equatorial Guinea",
+        "Gabon",
+        "Sao Tome and Principe"],
+        "Northern Africa":[
+        "Algeria",
+        "Egypt",
+        "Libya",
+        "Morocco",
+        "Sudan",
+        "Tunisia",
+        "Western Sahara"],
+        "Southern Africa":[
+        "Botswana",
+        "Lesotho",
+        "Namibia",
+        "South Africa",
+        "Swaziland"],
+        "Western Africa":[
+        "Benin",
+        "Burkina Faso",
+        "Cabo Verde",
+        "Côte d'Ivoire",
+        "Gambia",
+        "Ghana",
+        "Guinea",
+        "Guinea-Bissau",
+        "Liberia",
+        "Mali",
+        "Mauritania",
+        "Niger",
+        "Nigeria",
+        "Saint Helena",
+        "Senegal",
+        "Sierra Leone",
+        "Togo"]
+       },"ASIA":{
+        "Central Asia":[
+        "Kazakhstan",
+        "Kyrgyzstan",
+        "Tajikistan",
+        "Turkmenistan",
+        "Uzbekistan"],
+        "Eastern Asia":[
+        "China",
+        "China, Hong Kong SAR",
+        "China, Macao SAR",
+        "Dem. People's Republic of Korea",
+        "Japan",
+        "Mongolia",
+        "Republic of Korea"],
+        "Southern Asia":[
+        "Afghanistan",
+        "Bangladesh",
+        "Bhutan",
+        "India",
+        "Iran (Islamic Republic of)",
+        "Maldives",
+        "Nepal",
+        "Pakistan",
+        "Sri Lanka"],
+        "South-Eastern Asia":[
+        "Brunei Darussalam",
+        "Cambodia",
+        "Indonesia",
+        "Lao People's Democratic Republic",
+        "Malaysia",
+        "Myanmar",
+        "Philippines",
+        "Singapore",
+        "Thailand",
+        "Timor-Leste",
+        "Viet Nam"],
+        "Western Asia":[
+        "Armenia",
+        "Azerbaijan",
+        "Bahrain",
+        "Cyprus",
+        "Georgia",
+        "Iraq",
+        "Israel",
+        "Jordan",
+        "Kuwait",
+        "Lebanon",
+        "Oman",
+        "Qatar",
+        "Saudi Arabia",
+        "State of Palestine",
+        "Syrian Arab Republic",
+        "Turkey",
+        "United Arab Emirates",
+        "Yemen"]},
+        "EUROPE":{
+        "Eastern Europe":[
+        "Belarus",
+        "Bulgaria",
+        "Czechia",
+        "Hungary",
+        "Poland",
+        "Republic of Moldova",
+        "Romania",
+        "Russian Federation",
+        "Slovakia",
+        "Ukraine"],
+        "Northern Europe":[
+        "Channel Islands",
+        "Denmark",
+        "Estonia",
+        "Faeroe Islands",
+        "Finland",
+        "Iceland",
+        "Ireland",
+        "Isle of Man",
+        "Latvia",
+        "Lithuania",
+        "Norway",
+        "Sweden",
+        "United Kingdom"],
+        "Southern Europe":[
+        "Albania",
+        "Andorra",
+        "Bosnia and Herzegovina",
+        "Croatia",
+        "Gibraltar",
+        "Greece",
+        "Holy See",
+        "Italy",
+        "Malta",
+        "Montenegro",
+        "Portugal",
+        "San Marino",
+        "Serbia",
+        "Slovenia",
+        "Spain",
+        "TFYR Macedonia"],
+        "Western Europe":[
+        "Austria",
+        "Belgium",
+        "France",
+        "Germany",
+        "Liechtenstein",
+        "Luxembourg",
+        "Monaco",
+        "Netherlands",
+        "Switzerland"]
+        },
+        "LATIN_AMERICA_AND_THE_CARIBBEAN":{
+            "Caribbean":[
+            "Anguilla",
+            "Antigua and Barbuda",
+            "Aruba",
+            "Bahamas",
+            "Barbados",
+            "British Virgin Islands",
+            "Caribbean Netherlands",
+            "Cayman Islands",
+            "Cuba",
+            "Curaçao",
+            "Dominica",
+            "Dominican Republic",
+            "Grenada",
+            "Guadeloupe",
+            "Haiti",
+            "Jamaica",
+            "Martinique",
+            "Montserrat",
+            "Puerto Rico",
+            "Saint Kitts and Nevis",
+            "Saint Lucia",
+            "Saint Vincent and the Grenadines",
+            "Sint Maarten (Dutch part)",
+            "Trinidad and Tobago",
+            "Turks and Caicos Islands",
+            "United States Virgin Islands"],
+            "Central America":[
+            "Belize",
+            "Costa Rica",
+            "El Salvador",
+            "Guatemala",
+            "Honduras",
+            "Mexico",
+            "Nicaragua",
+            "Panama"],
+            "South America":[
+            "Argentina",
+            "Bolivia (Plurinational State of)",
+            "Brazil",
+            "Chile",
+            "Colombia",
+            "Ecuador",
+            "Falkland Islands (Malvinas)",
+            "French Guiana",
+            "Guyana",
+            "Paraguay",
+            "Peru",
+            "Suriname",
+            "Uruguay",
+            "Venezuela (Bolivarian Republic of)"]
+        },
+           "NORTHERN AMERICA":[
+            "Bermuda",
+            "Canada",
+            "Greenland",
+            "Saint Pierre and Miquelon",
+            "United States of America"],
+           'OCEANIA':{
+               "Australia/New Zealand":[
+                "Australia",
+                "New Zealand"],
+               "Melanesia":[
+                "Fiji",
+                "New Caledonia",
+                "Papua New Guinea",
+                "Solomon Islands",
+                "Vanuatu"],
+               "Micronesia":[
+                "Guam",
+                "Kiribati",
+                "Marshall Islands",
+                "Micronesia (Fed. States of)",
+                "Nauru",
+                "Northern Mariana Islands",
+                "Palau"],
+               "Polynesia":[
+                "American Samoa",
+                "Cook Islands",
+                "French Polynesia",
+                "Niue",
+                "Samoa",
+                "Tokelau",
+                "Tonga",
+                "Tuvalu",
+                "Wallis and Futuna Islands"]
+           }
+    }
+```
+
+```{python hidden=TRUE}
+list(world.keys())
+```
+
+# Additional sources
+
+
+## ACLED fatalities
+
+```{python hidden=TRUE}
+fatalities = pd.read_csv('data/ACLED_1997-2015_csv_dyadic.csv',encoding="ISO-8859-1")
+```
+
+```{python hidden=TRUE}
+fatalities.columns = [col.lower() for col in fatalities.columns]
+```
+
+```{python hidden=TRUE}
+fatalities = fatalities.drop(['gwno',
+                             'event_id_cnty',
+                             'event_id_no_cnty',
+                             'event_date',
+                             'time_precision',
+                             'event_type',
+                             'actor1',
+                             'ally_actor_1',
+                             'inter1',
+                             'actor2',
+                             'ally_actor_2',
+                             'inter2',
+                             'interaction',
+                             'country',
+                             'admin1',
+                             'admin2',
+                             'admin3',
+                             'geo_precision',
+                             'source',
+                             'notes'],axis=1)
+```
+
+```{python hidden=TRUE}
+fatalities.head()
+```
+
+```{python hidden=TRUE}
+#[loc in country2ID for loc in fatalities.location.unique()]
+fatalities.fatalities.describe()
+```
+
+## National Income
+
+
+Comparing concepts of income and wealth in different countries and over time is not straightforward. The concept of gross domestic product (GDP) that is commonly used to compare levels of economic welfare across countries is not satisfactory. We prefer the concept of national income (NI), i.e. GDP minus consumption of fixed capital (capital depreciation) plus net foreign income. National income is more meaningful because it takes into account the depreciation of the capital stock (including in principle natural capital), which is not an income to anyone, as well as the fraction of domestic output that is transferred to foreign capital owners (including in principle offshore wealth). For instance, a country with a large GDP but extensive capital depreciation and foreign outflows does not have much income to distribute to its residents and citizens. The national income concept reflects this.
+
+Next, and most importantly, the central problem of gross domestic product (total and per capita) is that it deals solely with aggregates and averages: it does not tell us anything about the extent to which the different social groups benefit – or not – from economic growth.
+
+In contrast, WID.world develops a methodology based upon the notion of Distributional National Accounts (DINA). The central objective is to describe the evolution of the distribution of national income and wealth, i.e. how the different percentiles of the distribution – from the bottom to the top – evolve over time and across countries, using concepts of income and wealth that are socially and economically meaningful and comparable across countries.
+
+[WID](https://wid.world/methodology/)
+
+```{python hidden=TRUE}
+wid = pd.read_csv('/Users/lapofrati/git/MigrationFlows/data/raw/WID_Data_26042019-020609.csv',
+                  skiprows=1,
+                  delimiter=';'
+                  #engine='python',
+                  #encoding='utf8'
+                  #error_bad_lines=False
+                 )
+```
+
+```{python hidden=TRUE}
+wid.columns = ['Year']+[nonsense.split('\n')[1].strip() for nonsense in wid.columns[1:]]
+wid = wid[[country for country in wid.columns if country != 'null']] # drop fucking nulls
+```
+
+```{python hidden=TRUE}
+wid.head()
+```
+
+```{python hidden=TRUE}
+set([country for country in wid.columns[1:] if country not in country2ID])
+```
+
+```{python hidden=TRUE}
+#['Year']+[country in country2ID for country in wid.columns]
+
+#'Cote d’Ivoire',
+#'Curacao',
+#'Korea'
+```
+
+```{python hidden=TRUE}
+wid_meta = pd.read_csv('/Users/lapofrati/git/MigrationFlows/data/raw/WID_Metadata_26042019-020609.csv',
+                  skiprows=1,
+                  delimiter=';'
+                  #engine='python',
+                  #encoding='utf8'
+                  #error_bad_lines=False
+                 )
+```
+
+```{python hidden=TRUE}
+countries = [country for country in wid_meta[wid_meta['Country Code'].str.len() <= 2]['Country Name'].to_list()]
+codes = [country for country in wid_meta[wid_meta['Country Code'].str.len() <= 2]['Country Code'].to_list()]
+
+```
+
+```{python hidden=TRUE}
+wid_meta.head()
+```
+
+```{python hidden=TRUE}
+wid = wid[['Year']+[country for country in countries if country in wid.columns]]
+```
+
+```{python hidden=TRUE}
+wid.head()
+```
+
+```{python hidden=TRUE}
+tmp = {country : code for country,code in zip(wid_meta['Country Name'].to_list(),wid_meta['Country Code'].to_list())}
+
+
+```
+
+```{python hidden=TRUE}
+matching_countries = []
+wid[[]]
+wid.columns = ['Year']+[tmp[country] for country in wid.columns[1:]]
+```
+
+```{python hidden=TRUE}
+wid = wid.replace(np.nan,0)
+wid.head()
+```
+
+```{python hidden=TRUE}
+#wid.to_csv('/Users/lapofrati/git/MigrationFlows/data/clean/money.csv', index=False)
+#4217.6288/3161319.5829999996
+5484.3013/3.199451e+06
+```
+
+```{python hidden=TRUE}
+wid[wid.Year == 1990][wid_countries].sum(axis=1)
+```
+
+```{python hidden=TRUE}
+len([code for code in list(tmp.values()) if code in list(country2ID.values())])
+```
+
+```{python hidden=TRUE}
+wid_countries = wid.columns[1:]
+wid[wid_countries].div(wid[wid_countries].sum(axis=1),axis=0)
+```
+
+```{python hidden=TRUE}
+
+```
