@@ -1,0 +1,102 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.0'
+      jupytext_version: 0.8.6
+  kernelspec:
+    display_name: Python [conda env:meta]
+    language: python
+    name: conda-env-meta-py
+---
+
+```{python}
+import json
+from collections import Counter
+import numpy as np
+import matplotlib.pyplot as plt
+from area import area
+```
+
+```{python}
+with open('countries.geojson','r') as f:
+    data = json.loads(f.read())
+```
+
+```{python}
+countries = []
+for entry in data['features']:
+    ID = entry['properties']['ISO_A3']
+    if entry['geometry']['type'] == 'Polygon':
+        loc = entry['geometry']['coordinates'][0]
+    else:
+        candidates = []
+        for poly in entry['geometry']['coordinates']:
+            candidates.append((len(poly[0]),poly[0]))
+            #candidates.append((area({'type':'Polygon','coordinates':poly}),poly))
+        loc = sorted(candidates,reverse=True)[0][1]
+    print(ID)
+    print(len(loc))
+    if(len(loc)==1):
+        print(loc)
+    countries.append((ID,loc))
+```
+
+```{python}
+clean = [(ID,poly) for ID,poly in countries if len(poly)>100]
+```
+
+```{python}
+
+```
+
+```{python}
+with open('clean_countries.json','w') as f:
+    f.write(json.dumps({ID:poly for ID,poly in clean}))
+```
+
+```{python}
+countries = [(el['properties']['ISO_A3'], el['geometry']['coordinates'][0]) for el in data['features'] if el['geometry']['type'] =='Polygon']
+```
+
+```{python}
+longs = [coord[0] for country, coords in countries for coord in coords]
+lats = [coord[1] for country, coords in countries for coord in coords]
+```
+
+```{python}
+print(min(lats))
+print(max(lats))
+```
+
+```{python}
+print(min(longs))
+print(max(longs))
+```
+
+```{python}
+lens = np.array([len(coords) for country, coords in countries])
+```
+
+```{python}
+print(min(lens))
+print(max(lens))
+```
+
+```{python}
+lens.mean()
+```
+
+```{python}
+polys = [ poly for el in data['features'] for poly in el['geometry']['coordinates'] if len(poly) == 1]
+```
+
+```{python}
+polys[0][0]
+```
+
+```{python}
+
+```

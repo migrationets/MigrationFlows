@@ -1,0 +1,519 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.0'
+      jupytext_version: 0.8.6
+  kernelspec:
+    display_name: Python [conda env:meta]
+    language: python
+    name: conda-env-meta-py
+---
+
+```{python}
+import numpy as np
+import networkx as nx
+import pandas as pd
+import matplotlib.pyplot as plt
+import json
+import re
+import datetime
+import time
+from itertools import count
+from collections import Counter, defaultdict
+```
+
+# Prepare data
+
+```{python}
+
+```
+
+```{python}
+iso2coords = json.loads(open('data/clean/ISO2coords.json','r').read())
+iso2coords['NA'] = [22.9576, 18.4904]
+populations = pd.read_csv('data/clean/pop_data.csv')
+seekers = pd.read_csv('data/clean/asylum_seekers_monthly.csv', keep_default_na=False)
+deaths = pd.read_csv('data/clean/georeferenced_deaths.csv', keep_default_na=False)
+migrations = pd.read_csv('data/clean/un_migration_stocks.csv')
+series = pd.read_csv('data/clean/unhcr_timeseries.csv')
+decisions = pd.read_csv('data/clean/decisions.csv',keep_default_na=False)
+```
+
+```{python}
+populations.head()
+```
+
+```{python}
+seekers.head()
+```
+
+```{python}
+seekers = seekers.groupby(['country','origin','year']).value.sum().reset_index()
+seekers.head()
+```
+
+```{python}
+deaths.head()
+```
+
+```{python}
+deaths = deaths.groupby(['location','year']).deaths.sum().reset_index()
+```
+
+```{python}
+deaths.head()
+```
+
+```{python}
+series.head()
+```
+
+```{python}
+decisions.head()
+```
+
+```{python}
+migrations.head()
+```
+
+```{python}
+migr_data = []
+migr_countries = migrations.columns[3:]
+
+for idx,row in migrations.iterrows():
+    year = row[0]
+    destination = row[1]
+    row_data = row[3:]
+    for(source, amount) in zip(migr_countries, row_data):
+        if amount > 0:
+            migr_data.append((year, destination, source, amount))
+```
+
+```{python}
+migr_flows = pd.DataFrame(migr_data, columns=['year','destination','source','amount'])
+```
+
+# Show data
+
+```{python}
+def make_seekers_graph(df, year,threshold):
+    G = nx.DiGraph()
+    #nodes = set(asylseek.country.to_list() + asylseek.origin.to_list())
+    #G.add_nodes_from(nodes)
+    
+    edges = []
+    edge_info = df[(df.origin != '??') & (df.year == year) & (df.value > threshold)][["country","origin","value"]]
+    for idx,(country,origin,value) in edge_info.iterrows():
+        edges.append((origin,country,value))
+    G.add_weighted_edges_from(edges)
+    
+    print("Year {} - N: {} E: {}".format(year, G.number_of_nodes(), G.number_of_edges()))
+    
+    return G
+```
+
+```{python}
+#G = make_seekers_graph(seekers, 2016, 100) 
+```
+
+```{python}
+#nx.draw(G, with_labels=True, font_weight='bold')
+```
+
+```{python}
+# for node in G:
+#     print(node,end=' : ')
+#     node_weight = 0
+#     for edge in G.in_edges(node):
+#         weight = G.get_edge_data(*edge)['weight']
+#         node_weight += weight
+#     print(node_weight)             
+#     G.node[node]['weight'] = node_weight
+#     lat,long = iso2coords[node]
+#     G.node[node]['latitude'] = lat
+#     G.node[node]['longitude'] = long
+```
+
+```{python}
+ #df[(df.origin != '??') & (df.year == year) & (df.month == month) & (df.value > threshold)][["country","origin","value"]]
+```
+
+```{python}
+# G.get_edge_data(*('AM', 'DE'))
+# nx.get_node_attributes(G,'latitude')
+```
+
+```{python}
+#nx.write_graphml(G,'test.graphml')
+```
+
+```{python}
+
+```
+
+```{python}
+
+```
+
+```{python}
+tot_deaths_per_year = deaths[deaths.year > 1997].groupby('year').max().reset_index()
+```
+
+```{python}
+yrs, dths = tot_deaths_per_year.year.to_list(), tot_deaths_per_year.deaths.to_list()
+```
+
+```{python}
+plt.plot(yrs,dths,'-o')
+
+_ = plt.xticks(yrs,rotation='vertical')
+plt.ylabel('Deaths')
+
+ax = plt.gca()
+ax.get_yaxis().get_major_formatter().set_scientific(False)
+```
+
+```{python}
+
+```
+
+```{python}
+migr_flows.groupby('year').amount.sum()
+```
+
+```{python}
+
+```
+
+```{python}
+
+```
+
+```{python}
+cond = (series.population == 'Refugees (incl. refugee-like situations)')\
+        & (series.origin != '??')\
+        & (series.country != '??')\
+        & (series.year > 1997)
+
+refugees = series[cond].drop('population',axis=1).dropna(axis=0).reset_index(drop=True)
+```
+
+```{python}
+refugees.head()
+```
+
+```{python}
+refugees[(refugees.country == 'IR') & (refugees.origin == 'AF') & (refugees.year == 2000)]
+```
+
+```{python}
+refugees[(refugees.country == 'IR') & (refugees.origin == 'AF') & (refugees.year == 2001)]
+```
+
+```{python}
+decisions[(decisions.destination == 'IR') & (decisions.origin == 'AF') & (decisions.year == 2000)]
+```
+
+```{python}
+
+```
+
+```{python}
+ys = refugees.groupby('year').value.sum().values
+xs = refugees.year.unique()
+
+
+plt.plot(xs, ys,'-o')
+_ = plt.xticks(xs,rotation='vertical')
+plt.ylabel('Refugees')
+
+ax = plt.gca()
+ax.get_yaxis().get_major_formatter().set_scientific(False)
+```
+
+```{python}
+
+```
+
+# Build a temporal flow tensor
+
+```{python}
+# no idea where TB comes from xD
+cond = (decisions.origin != 'TB')\
+        & (decisions.destination != '??')\
+        & (decisions.origin != '??')\
+        & (decisions.accepted > 0)
+
+decisions = decisions[cond].reset_index(drop=True)
+```
+
+```{python}
+# nodes in the graph are countries, 
+nodes = sorted(list(set(decisions.destination.to_list() + decisions.origin.to_list())))
+```
+
+```{python}
+nodes[:5]
+```
+
+```{python}
+# convert iso codes to numbers
+node2idx = {node:idx for node,idx in zip(nodes, count(0,1))}
+idx2node = {idx:node for node,idx in node2idx}
+```
+
+```{python}
+num_years = len(decisions.year.unique()) # number of years under examination
+min_year = min(decisions.year.unique()) # first year, used to shift the range [0,num_years]
+num_nodes = len(nodes) # 
+mig_ten = np.zeros((num_years,num_nodes,num_nodes)) # build migration tensor
+print(mig_ten.shape)
+```
+
+```{python}
+decisions.head() # mig_ten[year,country,origin] = value
+```
+
+```{python}
+rows = len(decisions)
+for idx, (year, country, origin, value, _) in decisions.iterrows():
+    print('\r{}/{}'.format(idx+1,rows),end='')
+    year = year - min_year
+    _from = node2idx[origin]
+    _to = node2idx[country]
+    mig_ten[year][_from][_to] = value
+
+```
+
+```{python}
+
+```
+
+```{python}
+series[(series.year == 2000) & (series.population == "Returned refugees") & (series.country == 'US')].value.sum()
+```
+
+```{python}
+decisions.head()
+```
+
+```{python}
+decisions[decisions.year == 2001].accepted.sum()
+```
+
+```{python}
+series[(series.year == 2001) & (series.population == "Refugees (incl. refugee-like situations)")].value.sum()
+```
+
+```{python}
+series[(series.year == 2002) & (series.population == "Refugees (incl. refugee-like situations)")].value.sum()
+```
+
+```{python}
+
+```
+
+```{python}
+
+```
+
+```{python}
+series[(series.year == 2001) & (series.population == "Returned refugees") & (series.country == 'US')].value.sum()
+```
+
+```{python}
+series[(series.year == 2001) & (series.population == "Refugees (incl. refugee-like situations)") & (series.country == 'US')].value.sum()
+```
+
+```{python}
+series[(series.year == 2011) & (series.country == 'AF')]
+```
+
+```{python}
+
+```
+
+# Build a temporal graph
+
+```{python}
+
+```
+
+```{python}
+G = nx.DiGraph()
+```
+
+Nodes will be countries at a specific point in time, we'll use the notation year_ISOCode e.g. 1998_IR
+
+```{python}
+rows = len(decisions)
+edges = [] # weighted edges are triples _from,_to, value
+for idx, (year,country, origin, value, _) in decisions.iterrows():
+    print('\r{}/{}'.format(idx+1,rows),end='')
+    _from = "{}_{}".format(year,origin)
+    _to = "{}_{}".format(year,country)
+    edges.append((_from,_to, value))
+```
+
+```{python}
+edges[:2]
+```
+
+```{python}
+#add migration edges
+G.add_weighted_edges_from(edges)
+```
+
+we now need to connect the nodes across different time slices
+
+```{python}
+# get all the years a country appears in
+temporal_connections = defaultdict(list)
+for year,loc in [node.split('_') for node in list(G.nodes())]:
+    temporal_connections[loc].append(year)
+```
+
+```{python}
+temporal_connections['IR']
+```
+
+```{python}
+# connect cosecutive years for each location
+temporal_edges = []
+for loc,years in temporal_connections.items():
+    for _from, _to in list(zip(years,years[1:])):
+        edge = (_from+"_"+loc,_to+'_'+loc)
+        temporal_edges.append(edge)
+```
+
+```{python}
+temporal_edges[:5]
+```
+
+```{python}
+
+```
+
+```{python}
+tmp_attributes = {}
+for node in G.nodes():
+    #print(G.in_edges(node))
+    in_flow = 0
+    for incoming_edge in G.in_edges(node):
+        data = G.get_edge_data(*incoming_edge)
+        in_flow += data['weight']
+    year, ISO = node.split('_')
+    lat,long = iso2coords[ISO]
+    tmp_attributes[node] = {'year':int(year),'ISO':ISO, 'refugees':in_flow, 'latitude':lat, 'longitude':long}
+```
+
+```{python}
+tmp_attributes
+```
+
+```{python}
+{key:val for key,val in  tmp_attributes['2000_ZW'].items()}
+```
+
+```{python}
+tot = len(node_attributes)
+node_attributes = {}
+
+for idx,(key,vals) in enumerate(tmp_attributes.items()):
+    
+    print("\r{}\{}".format(idx+1, tot),end='')
+    count = 0
+    for (other_key,other_vals) in tmp_attributes.items():
+        if(other_vals['ISO'] == vals['ISO'] and is):
+            count += re
+    attributes = { key : val for key,val in vals.items()}
+    attributes['refugees':]
+```
+
+```{python}
+nx.set_node_attributes(G,node_attributes)
+```
+
+```{python}
+G.nodes['2000_UZ']
+```
+
+```{python}
+decisions[(decisions.year == 2000) & (decisions.destination == 'UZ')]
+```
+
+The weight of a temporal edge between two nodes is the sum of weights of incoming edges of the source node.
+
+```{python}
+weighted_temporal_edges = []
+for temporal_edge in temporal_edges:
+    _from,_to = temporal_edge
+    temporal_weight = G.nodes[_from]['refugees']
+    weighted_temporal_edges.append((_from,_to,temporal_weight))
+```
+
+```{python}
+weighted_temporal_edges[:4]
+```
+
+```{python}
+G.add_weighted_edges_from(temporal_edges)
+```
+
+```{python}
+temporal_nodes = list(G.nodes)
+temporal_centrality = {}
+for idx,node in enumerate(temporal_nodes):
+    print('\r{}/{}'.format(idx,len(temporal_nodes)),end='')
+    temporal_centrality[node] = nx.local_reaching_centrality(G, node)
+```
+
+```{python}
+
+```
+
+```{python}
+
+```
+
+```{python}
+
+```
+
+```{python}
+
+```
+
+```{python}
+yrs = defaultdict(list)
+for node, centrality in sorted(list(temporal_centrality.items()),key=lambda x: x[1], reverse=True):
+    year, code = node.split('_')
+    yrs[year].append(iso2country[code])
+```
+
+```{python}
+
+```
+
+```{python}
+country2iso = json.loads(open('data/clean/country2ISO.json','r').read())
+```
+
+```{python}
+iso2country = {val:key for key,val in country2iso.items()}
+```
+
+```{python}
+
+```
+
+```{python}
+decisions.year.unique()
+```
+
+```{python}
+
+```

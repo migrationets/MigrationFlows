@@ -98,6 +98,9 @@ pop = pd.read_csv('data/raw/unhcr/countries.csv', delimiter='|', names=names)
 iso2coords = {}
 for idx, (code,lat,long) in pop[['code','lat','long']].iterrows():
     iso2coords[code] = (lat,long)
+```
+
+```{python}
 with open('data/clean/ISO2coords.json','w') as f:
     f.write(json.dumps(iso2coords))
 ```
@@ -267,7 +270,7 @@ with open('data/clean/country2ISO.json','r') as f:
 
 ## Asylum seekers
 
-```{python}
+```{python hidden=TRUE}
 # load
 monthly_asylum_seekers = pd.read_csv('data/raw/unhcr/delim_asylum_seekers_monthly.csv', delimiter='|')
 
@@ -281,33 +284,33 @@ monthly_asylum_seekers = monthly_asylum_seekers[monthly_asylum_seekers.value != 
 monthly_asylum_seekers.head()
 ```
 
-```{python}
+```{python hidden=TRUE}
 monthly_asylum_seekers.country = monthly_asylum_seekers.country.apply(lambda x: country2ID[x])
 monthly_asylum_seekers.origin = monthly_asylum_seekers.origin.apply(lambda x: country2ID[x])
 monthly_asylum_seekers.month = monthly_asylum_seekers.month.apply(lambda x: month2idx[x])
 ```
 
-```{python}
+```{python hidden=TRUE}
 monthly_asylum_seekers.head()
 ```
 
-```{python}
+```{python hidden=TRUE}
 monthly_asylum_seekers.to_csv('data/clean/asylum_seekers_monthly.csv',index=False)
 ```
 
-```{python}
+```{python hidden=TRUE}
 # use keep_default_na to prevent converting 'NA' to NaN
 tmp = pd.read_csv('data/clean/asylum_seekers_monthly.csv',keep_default_na=False)
 ```
 
-```{python}
+```{python hidden=TRUE}
 tot = len(monthly_asylum_seekers)
 for (idxa, a),(idxb,b) in zip(tmp.iterrows(), monthly_asylum_seekers.iterrows()):
     print('\r{}/{}'.format(idxa,tot),end='')
     assert all(a == b), idxa
 ```
 
-## Refugees
+## Refugees time series
 
 ```{python}
 # load
@@ -333,7 +336,8 @@ refugees.head()
 ```
 
 ```{python}
-
+#refugees.population.unique()
+refugees[(refugees.country == 'DE') & (refugees.origin == 'SY') & (refugees.year == 2015)]
 ```
 
 ```{python}
@@ -348,6 +352,95 @@ tmp = pd.read_csv('data/clean/unhcr_timeseries.csv',keep_default_na=False)
 for (idxa, a),(idxb,b) in zip(tmp.iterrows(), refugees.iterrows()):
     print('\r{}'.format(idxa),end='')
     assert all(a == b), idxa
+```
+
+## Accepted/rejected
+
+```{python}
+
+```
+
+```{python}
+decisions = pd.read_csv('data/raw/unhcr/delim_asylum_seekers.csv',delimiter='|')
+decisions.head()
+```
+
+```{python}
+#decisions['RSD procedure type / level'].unique()
+decisions = decisions.replace(np.nan,0)
+decisions = decisions.replace('*',0)
+```
+
+```{python}
+# make sure numbers are numbers >_>
+for col in ['Tota pending start-year', 
+           'Applied during year',
+           'statistics.filter.decisions_recognized',
+           'statistics.filter.decisions_other',
+           'Rejected',
+           'Otherwise closed',
+           'Total pending end-year']:
+    decisions[col] = pd.to_numeric(decisions[col])
+```
+
+```{python}
+
+```
+
+```{python}
+decisions['Rejected'] = decisions['Rejected'] + decisions['Otherwise closed']
+decisions['statistics.filter.decisions_recognized'] = decisions['statistics.filter.decisions_recognized'] + decisions['statistics.filter.decisions_other']
+decisions = decisions[['Year', 
+                       'Country / territory of asylum/residence', 
+                       'Origin', 
+                       'statistics.filter.decisions_recognized',
+                       'Rejected']]
+```
+
+```{python}
+decisions.head()
+```
+
+```{python}
+
+```
+
+```{python}
+decisions.columns = ['year','destination','origin','accepted','rejected']
+decisions.destination = decisions.destination.apply(lambda country: country2ID[country])
+decisions.origin = decisions.origin.apply(lambda country: country2ID[country])
+```
+
+```{python}
+decisions = decisions[(decisions.accepted != 0) | (decisions.rejected != 0)]
+```
+
+```{python}
+decisions.head()
+```
+
+```{python}
+tot_decisions = decisions.groupby(['year','destination','origin']).sum().reset_index()
+```
+
+```{python}
+tot_decisions.head()
+```
+
+```{python}
+
+```
+
+```{python}
+decisions.to_csv('data/clean/decisions.csv',index=False)
+```
+
+```{python}
+#tot_decisions[(tot_decisions.destination == 'DE') & (tot_decisions.origin == 'SY') & (tot_decisions.year == 2015)]
+```
+
+```{python}
+
 ```
 
 # UCDP conflicts
@@ -407,7 +500,7 @@ Counter(major_conflicts.intensity.to_list())
 ```
 
 ```{python}
-major_conflicts[major_conflicts.actor == 'US']
+major_conflicts[major_conflicts.actor == 'SY']
 ```
 
 ```{python}
@@ -421,12 +514,15 @@ ged_ucdp = pd.read_csv('data/raw/ged181.csv')
 ```
 
 ```{python}
-#ged_ucdp.columns
+
 ```
 
 ```{python}
-geo_deaths = ged_ucdp[(ged_ucdp.best > 0) & (ged_ucdp.best < 20000)][['year','date_start','country','best']].groupby(['year','date_start','country']).sum().reset_index()
+geo_deaths = ged_ucdp[(ged_ucdp.best > 0)][['year','date_start','country','best']].groupby(['year','date_start','country']).sum().reset_index()
+```
 
+```{python}
+geo_deaths
 ```
 
 ```{python}
@@ -441,20 +537,25 @@ geo_deaths.head()
 ```
 
 ```{python}
-tot_per_year = geo_deaths.groupby('date').deaths.sum().reset_index()#.sort_values(by='date', axis=1, ascending=False)
-
-tot_per_year.sort_values('date',inplace=True)
-
+geo_deaths = geo_deaths.groupby(["year","location"]).deaths.sum().reset_index()
 ```
 
 ```{python}
-xs = tot_per_year.date.to_list()
-ys = tot_per_year.deaths.to_list()
+geo_deaths.head()
+```
+
+```{python}
+xs = geo_deaths.year.to_list()
+ys = geo_deaths.deaths.to_list()
 plt.plot(xs,ys)
 ```
 
 ```{python}
 geo_deaths.to_csv('data/clean/georeferenced_deaths.csv', index=False)
+```
+
+```{python}
+
 ```
 
 # UN migration stocks
