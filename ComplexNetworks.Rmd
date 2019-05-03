@@ -32,6 +32,8 @@ from collections import Counter, defaultdict
 ```
 
 ```{python}
+country2iso = json.loads(open('data/clean/country2ISO.json','r').read())
+iso2country = {val:key for key,val in country2iso.items()}
 iso2coords = json.loads(open('data/clean/ISO2coords.json','r').read())
 iso2coords['NA'] = [22.9576, 18.4904]
 populations = pd.read_csv('data/clean/pop_data.csv')
@@ -94,6 +96,10 @@ for idx,row in migrations.iterrows():
 
 ```{python}
 migr_flows = pd.DataFrame(migr_data, columns=['year','destination','source','amount'])
+```
+
+```{python}
+migr_flows.head()
 ```
 
 # Show data
@@ -488,10 +494,11 @@ for idx,node in enumerate(temporal_nodes):
 ```
 
 ```{python}
-yrs = defaultdict(list)
-for node, centrality in sorted(list(temporal_centrality.items()),key=lambda x: x[1], reverse=True):
-    year, code = node.split('_')
-    yrs[year].append(iso2country[code])
+
+```
+
+```{python}
+
 ```
 
 ```{python}
@@ -499,19 +506,101 @@ for node, centrality in sorted(list(temporal_centrality.items()),key=lambda x: x
 ```
 
 ```{python}
-country2iso = json.loads(open('data/clean/country2ISO.json','r').read())
-```
-
-```{python}
-iso2country = {val:key for key,val in country2iso.items()}
-```
-
-```{python}
 
 ```
 
 ```{python}
-decisions.year.unique()
+destinations = set(decisions[decisions.year == 2000].destination.unique())
+origins = set(decisions[decisions.year == 2000].origin.unique())
+```
+
+```{python}
+print(len(destinations))
+print(len(origins))
+print(len(destinations.intersection(origins)))
+```
+
+```{python}
+decisions.head()
+```
+
+```{python}
+inflow = decisions.groupby(['year','destination']).accepted.sum().reset_index()
+inflow = inflow[inflow.accepted > 0]
+outflow = decisions.groupby(['year','origin']).accepted.sum().reset_index()
+outflow = outflow[outflow.accepted > 0]
+```
+
+```{python}
+inflow.head()
+```
+
+```{python}
+outflow.head()
+```
+
+```{python}
+def get_flow_per_year(df):
+    flow_per_year = {}
+    for year, group in df.groupby('year'):
+        flows = []
+        for idx,( _, country, count) in group.iterrows():
+            flows.append((count,country))
+        flow_per_year[year] = flows
+    return flow_per_year
+```
+
+```{python}
+inflow = get_flow_per_year(inflow)
+```
+
+```{python}
+def piz(data):
+    return list(zip(*data))
+```
+
+```{python}
+fig, ax = plt.subplots()
+for year in decisions.year.unique()[10:]:
+    print(sorted(inflow[year])[-5:])
+    #ys,xs = piz(sorted(inflow[year]))
+    #ys = np.array(ys)
+    #xs = np.array(xs)
+    #cdf = np.cumsum(ys)/sum(ys)
+    #cutpoint = .25
+    #plt.title(str(year))
+    #ax.plot(ys[-10:],label=str(year))
+    #_ = ax.set_xticks(range(len(ys[cdf > cutpoint])))
+    #_ = ax.set_xticklabels(xs[cdf > cutpoint])
+#plt.legend()
+```
+
+```{python}
+
+```
+
+```{python}
+
+```
+
+```{python}
+
+```
+
+```{python}
+migr_flows.year.unique()
+```
+
+```{python}
+migr_flows.y
+```
+
+```{python}
+
+```
+
+```{python}
+
 ```
 
 ```{python}

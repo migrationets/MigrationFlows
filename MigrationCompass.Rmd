@@ -1,0 +1,212 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.0'
+      jupytext_version: 0.8.6
+  kernelspec:
+    display_name: Python [conda env:meta]
+    language: python
+    name: conda-env-meta-py
+---
+
+```{python}
+import numpy as np
+import networkx as nx
+import pandas as pd
+import matplotlib.pyplot as plt
+import json
+import re
+import datetime
+import time
+from itertools import count
+from collections import Counter, defaultdict
+```
+
+```{python}
+country2iso = json.loads(open('data/clean/country2ISO.json','r').read())
+iso2country = {val:key for key,val in country2iso.items()}
+iso2coords = json.loads(open('data/clean/ISO2coords.json','r').read())
+iso2coords['NA'] = [22.9576, 18.4904]
+iso2coords['SH'] = [15.56, 5.43]
+iso2coords['AN'] = [12.226079, -69.0600891]
+populations = pd.read_csv('data/clean/pop_data.csv')
+seekers = pd.read_csv('data/clean/asylum_seekers_monthly.csv', keep_default_na=False)
+deaths = pd.read_csv('data/clean/georeferenced_deaths.csv', keep_default_na=False)
+migrations = pd.read_csv('data/clean/un_migration_stocks.csv',keep_default_na=False)
+series = pd.read_csv('data/clean/unhcr_timeseries.csv')
+decisions = pd.read_csv('data/clean/decisions.csv',keep_default_na=False)
+```
+
+```{python}
+migr_data = []
+migr_countries = migrations.columns[3:]
+
+for idx,row in migrations.iterrows():
+    year = row[0]
+    destination = row[1]
+    row_data = row[3:]
+    for(source, amount) in zip(migr_countries, row_data):
+        if amount > 0:
+            migr_data.append((year, destination, source, amount))
+            
+migr_flows = pd.DataFrame(migr_data, columns=['year','destination','source','amount'])
+migr_flows.head()
+```
+
+```{python}
+class Vec():
+    def __init__(self,x,y,weight=0):
+        x = 2*x
+        self.mag = (x**2 + y**2)**0.5
+        self.x = x/self.mag
+        self.y = y/self.mag
+        self.weight = weight
+        
+    def __mul__(self, other):
+        return Vec(self.x * other, self.y * other)
+    def __truediv__(self, other):
+        return Vec(self.x / other, self.y / other)
+    def __rmul__(self, other):
+        return Vec(self.x * other, self.y * other)
+    def __add__(self, other):
+        return Vec(self.x + other.x, self.y + other.y)
+    def __sub__(self, other):
+        return Vec(self.x - other.x, self.y - other.y)
+    
+    def __repr__(self):
+        return "[x:{:.2f}, y:{:.2f}]".format(self.x, self.y)
+    def __str__(self):
+        return self.__repr__()
+    
+    def __iter__(self): # for some sweet unpacking
+        return iter((self.x, self.y))
+```
+
+```{python}
+iso2vec = {key:Vec(*val) for key,val in iso2coords.items()}
+iso2vec
+```
+
+```{python}
+pair_vecs = {}
+for source in iso2vec.keys():
+    vecs = {}
+    for dest in iso2vec.keys():
+        if source != dest:
+            try:
+                vecs[dest] = iso2vec[dest] - iso2vec[source]
+            except:
+                continue
+    pair_vecs[source] = vecs
+```
+
+```{python}
+pair_vecs['AF']
+```
+
+```{python}
+def plot_arrows(iso, figsize=(6,6)):
+    plt.figure(figsize=figsize)
+    for iso,vec in pair_vecs[iso].items():
+        plt.arrow(0,0,*vec,linewidth=1, alpha=0.3)
+    plt.xlim(-1,1)
+    plt.ylim(-1,1)
+    plt.show()
+```
+
+```{python}
+plot_arrows('IT')
+```
+
+```{python}
+plot_arrows('AF')
+```
+
+```{python}
+pair_vecs['US']
+```
+
+```{python}
+pair_vecs['AF']
+```
+
+```{python}
+max_x = 0
+min_x = 0
+max_y = 0
+min_y = 0
+for source, destinations in pair_vecs.items():
+    for destination, vec in destinations.items():
+        x,y = vec
+        if(x > max_x):
+            max_x = x
+        if(x < min_x):
+            min_x = x
+        if(y > max_y):
+            max_y = y
+        if(y < min_y):
+            min_y = y
+```
+
+```{python}
+print(max_x,max_y)
+```
+
+```{python}
+print(min_x, min_y)
+```
+
+```{python}
+migr_flows.head()
+```
+
+```{python}
+mig_vecs = {}
+for year in migr_flows.year.unique():
+    vecs = []
+    for idx,(_, dest, source, amount) in migr_flows[migr_flows.year == year].iterrows():
+        vec = pair_vecs[source][dest]
+        vec.weight = amount
+        vecs.append(vec)
+    mig_vecs[year] = vecs
+```
+
+```{python}
+list(mig_vecs.keys())
+```
+
+```{python}
+yearly_mig_vecs = {}
+for year in mig_vecs:
+    tot = Vec(0,0)
+    for vec in mig_vecs[year]:
+        tot += vec
+    yearly_mig_vecs[year] = tot
+```
+
+```{python}
+yearly_mig_vecs
+```
+
+```{python}
+mig_vecs[1990][:5]
+```
+
+```{python}
+mig_vecs[2010][:5]
+```
+
+```{python}
+a = Vec(2,2)
+```
+
+```{python}
+
+```
+
+```{python}
+
+```
