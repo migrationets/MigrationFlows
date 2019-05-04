@@ -33,12 +33,13 @@ let slider;
 let selecting_year = false;
 let dataReady = false;
 let prev;
+let plot = [];
 
 function setup() {
     // Setup canvas and controls
     canvas = createCanvas(800, 600);
     slider = createSlider(1999, 2017, 1); // 2018 data is incomplete
-    slider.position(width - 300, height - 50);
+    slider.position(width - 400, height - 50);
     slider.style('width', '200px');
     slider.style('z-index', '999');
 
@@ -89,12 +90,13 @@ function draw() {
         fill(255);
         noStroke();
         textAlign(LEFT);
-        text(str(year) + ' - ' + monthsnames[month], 180, height - 50);
+        text(str(year) + ' - ' + monthsnames[month], 160, height - 50);
 
         push();
         // MOVE DRAWING TO THE CENTER
-        translate(width / 2, height / 2);
+        translate(width / 2 + 100, height / 2 + 50);
 
+        // Prepare compass
         fill(120);
         noStroke();
         textAlign(CENTER);
@@ -105,6 +107,7 @@ function draw() {
         text('E', radius + 8, 8);
         text('W', -radius - 13, 8);
 
+        // Compass frame
         noFill();
         stroke(120);
         strokeWeight(1);
@@ -115,9 +118,13 @@ function draw() {
 
         // draw asylum seekers
         let result = createVector(0, 0);
+
+        // Individual Vectors
+        let offset = -250;
         strokeCap(ROUND);
         stroke(200);
         strokeWeight(1);
+        let tot = 0;
         for (let entry of monthly_flow[year][month]) {
             let [from, to, count] = entry;
             if (iso2xy[from] != undefined && iso2xy[to] != undefined) {
@@ -128,15 +135,64 @@ function draw() {
                 let dir = p5.Vector.sub(end, start);
                 dir.setMag(count / 20);
                 result.add(dir);
-                line(0, 0, dir.x, dir.y);
+                line(offset, 0, offset + dir.x, dir.y);
+                tot += count;
             }
         }
+        // Other frame
+        stroke(120);
+        noFill();
+        ellipse(offset, 0, radius * 2);
 
-        stroke(255, 0, 0);
-        strokeWeight(3);
-        result.div(20);
+        // Compass Needle
+        let from = color(0, 255, 0);
+        let to = color(255, 0, 0);
+        let col = lerpColor(from, to, tot / 200000);
+        stroke(col);
+        strokeWeight(5);
+        result.setMag(radius);
         line(0, 0, lerp(prev.x, result.x, progress), lerp(prev.y, result.y, progress));
-        ellipse(0, 0, 7);
+        pop();
+
+        // VALUES PLOTS
+        push();
+        stroke(255);
+        translate(230, 160);
+        // y-axis
+        line(0, 0, 0, -100);
+        // x.axis
+        line(0, 0, 300, 0);
+
+        fill(200);
+        noStroke();
+        textSize(15);
+        text('Time', 130, 17);
+        push();
+        rotate(-HALF_PI);
+        text('Refugees', 18, -5);
+        pop();
+
+        fill(from);
+        rect(-10, -10, 10, 10);
+
+        fill(to);
+        rect(-10, -100, 10, 10);
+
+        stroke(255);
+        noFill();
+        beginShape();
+        let idx = 0;
+        let last = 0;
+        for (let val of plot) {
+            vertex(idx, val * -100);
+            idx += 10;
+            last = val; // yup I'm saving the last one because I don't like plot[plot.length - 1]
+        }
+        endShape();
+        textSize(20);
+        noStroke();
+        fill(col);
+        text(str(int(last * 200000)), idx - 8, last * -100 + 7);
         pop();
 
         // show slider selection
@@ -145,13 +201,16 @@ function draw() {
             stroke(255);
             fill(255);
             text(str(slider.value()), mouseX, mouseY - 20);
-            console.log(slider.value());
         }
 
         // update progress
         if (progress < 1) {
             progress += 0.1;
         } else {
+            plot.push(tot / 200000);
+            if (plot.length > 30) {
+                plot.shift();
+            }
             progress = 0;
             prev = result;
             if (month < 11) {
@@ -162,6 +221,7 @@ function draw() {
                     year += 1;
                 } else {
                     year = 1999;
+                    plot = [];
                 }
                 slider.value(year);
             }
