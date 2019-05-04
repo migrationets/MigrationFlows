@@ -39,7 +39,7 @@ function setup() {
     // Setup canvas and controls
     canvas = createCanvas(800, 600);
     slider = createSlider(1999, 2017, 1); // 2018 data is incomplete
-    slider.position(width - 400, height - 50);
+    slider.position(width - 350, height - 50);
     slider.style('width', '200px');
     slider.style('z-index', '999');
 
