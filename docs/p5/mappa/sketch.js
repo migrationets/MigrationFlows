@@ -100,6 +100,9 @@ function setup() {
     frameRate(30);
     start_color = color(220, 50, 80, 95);
     end_color = color(80, 220, 100, 95);
+
+    noLoop();
+    console.log('mappa stopped');
 }
 //
 

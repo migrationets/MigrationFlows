@@ -13,9 +13,23 @@ let canvas;
 let countries;
 let overlayLoaded = false;
 let dataLoaded = false;
+let focused = false;
+let firstDraw = true;
 
 function setup() {
     canvas = createCanvas(800, 600);
+
+    /*
+    canvas.mouseOver(() => {
+        console.log('running');
+        loop();
+    });
+
+    canvas.mouseOut(() => {
+        console.log('stopped');
+        noLoop();
+    });
+    */
 
     // Create a tile map and overlay the canvas on top.
     myMap = mappa.tileMap(options);
@@ -33,11 +47,14 @@ function setup() {
     stroke(100);
 
     noCursor();
+    noLoop();
+    console.log('spikyballs stopped');
 }
 
 function draw() {
-    clear();
     if (overlayLoaded && dataLoaded) {
+        clear();
+
         let mouse = createVector(mouseX, mouseY);
         for (const [ISO, coords] of Object.entries(countries)) {
             // Get the lat/lng of each meteorite

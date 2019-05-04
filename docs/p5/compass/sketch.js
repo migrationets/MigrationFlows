@@ -73,6 +73,9 @@ function setup() {
     start_color = color(220, 50, 80, 95);
     end_color = color(80, 220, 100, 95);
     prev = createVector(0, 0);
+
+    noLoop();
+    console.log('compass stopped');
 }
 //
 
