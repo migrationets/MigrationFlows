@@ -32,6 +32,14 @@ section {
     margin-right: auto;
 }
 
+section {
+    margin-bottom: 100px;
+}
+
+body {
+    padding-bottom: 400px;
+}
+
 p {
     font-size: 18px;
     text-align: justify;
@@ -70,26 +78,7 @@ h1 {
     color: #f1f1f1;
 }
 
-/* On smaller screens, where height is less than 450px, change the style of the sidenav (less padding and a smaller font size) */
-@media screen and (max-height: 450px) {
-    .sidenav {
-        padding-top: 15px;
-    }
-    .sidenav a {
-        font-size: 18px;
-    }
-}
-
 .active {
     color: #f38a8a !important;
     border-left: 5px solid #f38a8a;
-}
-
-section {
-    height: 100vh;
-    position: relative;
-    margin: 0;
-    padding: 0;
-    display: block;
-    z-index: 0;
 }
