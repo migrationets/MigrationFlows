@@ -65,7 +65,7 @@
             <a href="#spikyballs">Fingerprints</a>
             <a href="#compass">Compass</a>
         </div>
-        <div class="header" style="text-align:center">
+        <header>
             <iframe
                 id="world"
                 class="track"
@@ -74,7 +74,7 @@
                 onload="resizeIframe(this)"
                 src="p5/header/index.html"
             ></iframe>
-        </div>
+        </header>
         <section class="section" id="migrants">
             <h1>Migrants and Refugees</h1>
             <p>
@@ -104,16 +104,6 @@
 
         <section id="asylum">
             <h1>Asylum Seekers</h1>
-            <iframe
-                class="track"
-                frameborder="0"
-                marginheight="20"
-                marginwidth="35"
-                scrolling="no"
-                onload="resizeIframe(this)"
-                src="p5/mappa/index.html"
-            ></iframe>
-
             <blockquote cite="https://www.unhcr.org/en-us/3b66c2aa10">
                 <p>
                     A refugee is someone who is unable or unwilling to return to their country of
@@ -122,7 +112,12 @@
                     opinion.
                 </p>
             </blockquote>
-            <cite>– 1951 UNHCR convention relating to the status of refugees</cite>
+            <cite
+                >–
+                <a href="https://www.unhcr.org/en-us/3b66c2aa10">
+                    1951 UNHCR convention relating to the status of refugees
+                </a></cite
+            >
 
             <p>
                 People don't have to "apply" to become a refugee. As soon as the conditions outlined
@@ -142,14 +137,10 @@
             <p>
                 Monthly data regarding the amount of asylum seekers applying for entry in a specifc
                 country is made available by the UNHCR along with informations about their origin
-                (when possible). As we can see in the map above this naturally leads to the creation
+                (when possible). As we can see in the map below this naturally leads to the creation
                 of an intricate network. For the sake of visualization the map reports the movement
                 of groups of at least 100 individuals.
             </p>
-        </section>
-
-        <section id="spikyballs">
-            <h1>Country Fingerprints</h1>
             <iframe
                 class="track"
                 frameborder="0"
@@ -157,8 +148,12 @@
                 marginwidth="35"
                 scrolling="no"
                 onload="resizeIframe(this)"
-                src="p5/spikyballs/index.html"
+                src="p5/mappa/index.html"
             ></iframe>
+        </section>
+
+        <section id="spikyballs">
+            <h1>Country Fingerprints</h1>
             <p>
                 From a network point of view the movement of asylum seekers form a temporal directed
                 geometric graph. It is temporal because even if the main edges (in terms of asylum
@@ -174,6 +169,12 @@
                 >
                 and therefore form an Euclidean graph.
             </p>
+            <figure>
+                <img src="EuclideanFingerprint.svg" alt="Euclidean fingerprint" />
+                <figcaption>
+                    Unit vectors in Euclidean graph.
+                </figcaption>
+            </figure>
             <p>
                 The fact that nodes are spatially located provides a useful extra piece of
                 information. While in non-geometric graphs we usually characterize a node by the
@@ -187,10 +188,6 @@
                 natural to ask oneself, can we leverage this spatial information to visualize the
                 movement of asylum seekers over time?
             </p>
-        </section>
-
-        <section id="compass">
-            <h1>Compass of Refugees</h1>
             <iframe
                 class="track"
                 frameborder="0"
@@ -198,8 +195,13 @@
                 marginwidth="35"
                 scrolling="no"
                 onload="resizeIframe(this)"
-                src="p5/compass/index.html"
+                src="p5/spikyballs/index.html"
             ></iframe>
+        </section>
+
+        <section id="compass">
+            <h1>Compass of Refugees</h1>
+
             <p>
                 Since nodes have coordinates associated to them we can treat edges as if they were
                 vectors. These vectors have a magnitude given by the euclidean distance bewteen two
@@ -209,7 +211,12 @@
                 point in time as a measure of that vector magnitude. This way we can aggregate the
                 total flow simply using vector summation.
             </p>
-            <img src="EdgesToCompass.svg" alt="Combining refugee flows" class="center" />
+            <figure>
+                <img src="EdgesToCompass.svg" alt="Combining refugee flows" class="center" />
+                <figcaption style="text-align: center;">
+                    Combining flow vectors.
+                </figcaption>
+            </figure>
             <p>
                 This approach allows us to build some sort of "compass" of the refugee flow. At
                 every point in time the compass will point in the direction of the resulting total
@@ -219,12 +226,21 @@
                 needle stably points toward Norh-West.
             </p>
             <p>
-                In the above visualization we can see the resulting "compass". On top we can see the
+                In the visualization below we can see the resulting "compass". On top we can see the
                 overall count of refugess, color coded from green to red, with green being the
                 lowest amount observed during the years considered and red the highest. In the
                 bottom left we can see the individual vectors before being summed and finally in the
                 bottom right we can see the the compass.
             </p>
+            <iframe
+                class="track"
+                frameborder="0"
+                marginheight="20"
+                marginwidth="35"
+                scrolling="no"
+                onload="resizeIframe(this)"
+                src="p5/compass/index.html"
+            ></iframe>
         </section>
 
         <script src="appear.js"></script>

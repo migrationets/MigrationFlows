@@ -101,9 +101,14 @@ blockquote p::after {
     content: '\201D';
 }
 
-.center {
+img {
     display: block;
     margin-left: auto;
     margin-right: auto;
     width: 50%;
+}
+
+figcaption {
+    padding-top: 20px;
+    text-align: center;
 }
