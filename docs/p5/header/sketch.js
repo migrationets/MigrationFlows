@@ -111,7 +111,7 @@ function draw() {
         clear();
         image(worldLayer, 0, 0);
 
-        fill(115,210,222);
+        fill(216,17,89);
         noStroke();
 
         for (let k = 0; k < particles.length; k++) {
