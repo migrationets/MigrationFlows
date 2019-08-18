@@ -201,7 +201,7 @@ class Particle {
     }
 
     show() {
-        fill(115,210,222);
+        fill(216,17,89);
         noStroke();
         ellipse(this.pos.x, this.pos.y, 4);
 
