@@ -70,7 +70,7 @@ function setup() {
         worldLayer.clear();
         worldLayer.stroke(255, 80);
         worldLayer.strokeWeight(0.5);
-        worldLayer.fill(70);
+        worldLayer.fill(115,210,222);
         for (let el of polys) {
             let [_, poly] = el;
             worldLayer.beginShape();
