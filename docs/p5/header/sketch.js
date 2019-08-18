@@ -70,7 +70,7 @@ function setup() {
         worldLayer.clear();
         worldLayer.stroke(255, 80);
         worldLayer.strokeWeight(0.5);
-        worldLayer.fill(115,210,222);
+        worldLayer.fill(70);
         for (let el of polys) {
             let [_, poly] = el;
             worldLayer.beginShape();
@@ -111,7 +111,7 @@ function draw() {
         clear();
         image(worldLayer, 0, 0);
 
-        fill(255, 0, 0);
+        fill(115,210,222);
         noStroke();
 
         for (let k = 0; k < particles.length; k++) {
@@ -201,7 +201,7 @@ class Particle {
     }
 
     show() {
-        fill(255, 0, 0);
+        fill(115,210,222);
         noStroke();
         ellipse(this.pos.x, this.pos.y, 4);
 
